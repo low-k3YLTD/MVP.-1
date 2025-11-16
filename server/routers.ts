@@ -1,10 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { z } from "zod";
+import { getPredictionService } from "./services/predictionService";
+import { getUserPredictions } from "./db";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -17,12 +19,52 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  prediction: router({
+    // Get model information and performance metrics
+    getModelInfo: publicProcedure.query(() => {
+      const service = getPredictionService();
+      return service.getModelInfo();
+    }),
+
+    // Predict rankings for a single race
+    predictRace: publicProcedure
+      .input(
+        z.object({
+          features: z.record(z.string(), z.number()),
+          raceId: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const service = getPredictionService();
+        return service.predictRace(input);
+      }),
+
+    // Predict rankings for multiple races (batch)
+    predictBatch: publicProcedure
+      .input(
+        z.array(
+          z.object({
+            features: z.record(z.string(), z.number()),
+            raceId: z.string().optional(),
+          })
+        )
+      )
+      .mutation(async ({ input }) => {
+        const service = getPredictionService();
+        return service.predictBatch(input);
+      }),
+
+    // Get prediction history for authenticated user
+    getHistory: protectedProcedure
+      .input(
+        z.object({
+          limit: z.number().min(1).max(100).default(50),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        return getUserPredictions(ctx.user.id, input.limit);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, predictions, InsertPrediction } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,38 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function getUserPredictions(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get predictions: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(predictions)
+      .where(eq(predictions.userId, userId))
+      .orderBy(desc(predictions.createdAt))
+      .limit(limit);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get user predictions:", error);
+    return [];
+  }
+}
+
+export async function savePrediction(prediction: InsertPrediction) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot save prediction: database not available");
+    return;
+  }
+
+  try {
+    await db.insert(predictions).values(prediction);
+  } catch (error) {
+    console.error("[Database] Failed to save prediction:", error);
+    throw error;
+  }
+}

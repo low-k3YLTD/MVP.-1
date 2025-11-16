@@ -25,4 +25,18 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+export const predictions = mysqlTable("predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  raceId: varchar("raceId", { length: 128 }).notNull(),
+  horseName: varchar("horseName", { length: 256 }).notNull(),
+  predictedRank: int("predictedRank").notNull(),
+  predictedScore: varchar("predictedScore", { length: 50 }).notNull(),
+  actualRank: int("actualRank"),
+  features: text("features"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Prediction = typeof predictions.$inferSelect;
+export type InsertPrediction = typeof predictions.$inferInsert;
