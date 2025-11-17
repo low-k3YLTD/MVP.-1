@@ -5,6 +5,7 @@ import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { getPredictionService } from "./services/predictionService";
 import { getUserPredictions } from "./db";
+import { getMockRaces, getRandomMockRace, type MockRace } from "./services/mockRaceDataService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,6 +21,16 @@ export const appRouter = router({
   }),
 
   prediction: router({
+    // Get mock races for testing
+    getMockRaces: publicProcedure.query(() => {
+      return getMockRaces();
+    }),
+
+    // Get a random mock race
+    getRandomRace: publicProcedure.query(() => {
+      return getRandomMockRace();
+    }),
+
     // Get model information and performance metrics
     getModelInfo: publicProcedure.query(() => {
       const service = getPredictionService();
@@ -32,6 +43,7 @@ export const appRouter = router({
         z.object({
           features: z.record(z.string(), z.number()),
           raceId: z.string().optional(),
+          horseNames: z.array(z.string()).optional(),
         })
       )
       .mutation(async ({ input }) => {
