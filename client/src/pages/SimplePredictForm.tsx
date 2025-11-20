@@ -45,6 +45,10 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
   const predictMutation = trpc.prediction.predictRace.useMutation();
   const mockRacesQuery = trpc.prediction.getMockRaces.useQuery();
   const randomRaceQuery = trpc.prediction.getRandomRace.useQuery();
+  const liveRacesQuery = trpc.prediction.getUpcomingRaces.useQuery(
+    { provider: "auto" },
+    { refetchInterval: 30000 } // Refetch every 30 seconds
+  );
 
   const loadSampleRace = (raceData: any) => {
     const numHorses = raceData.horses.length;
@@ -186,9 +190,46 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Live Races */}
+          <div>
+            <Label className="text-slate-300 mb-2 block">Load Live Race</Label>
+            {liveRacesQuery.data && liveRacesQuery.data.length > 0 && (
+              <select
+                onChange={(e) => {
+                  const race = liveRacesQuery.data?.find((r: any) => r.id === e.target.value);
+                  if (race) {
+                    const numHorses = race.horses.length;
+                    setFormData({
+                      raceId: race.id,
+                      trackType: race.track,
+                      distance: race.distance,
+                      raceClass: race.raceClass,
+                      weather: race.weather || "clear",
+                      numHorses: numHorses.toString(),
+                      horseNames: race.horses.map((h: any) => h.name),
+                    });
+                    setPredictions(null);
+                    setError("");
+                  }
+                }}
+                className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 mb-3"
+              >
+                <option value="">Select Live Race...</option>
+                {liveRacesQuery.data.map((race: any) => (
+                  <option key={race.id} value={race.id}>
+                    {race.name} - {race.horses.length} horses
+                  </option>
+                ))}
+              </select>
+            )}
+            {liveRacesQuery.isLoading && (
+              <p className="text-slate-400 text-sm mb-3">Loading live races...</p>
+            )}
+          </div>
+
           {/* Sample Races */}
           <div>
-            <Label className="text-slate-300 mb-2 block">Load Sample Race</Label>
+            <Label className="text-slate-300 mb-2 block">Or Load Sample Race</Label>
             <div className="flex gap-2">
               <Button
                 onClick={loadRandomRace}

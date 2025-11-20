@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getPredictionService } from "./services/predictionService";
 import { getUserPredictions } from "./db";
 import { getMockRaces, getRandomMockRace, type MockRace } from "./services/mockRaceDataService";
+import { getLiveRaceDataService, type LiveRace } from "./services/liveRaceDataService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -30,6 +31,35 @@ export const appRouter = router({
     getRandomRace: publicProcedure.query(() => {
       return getRandomMockRace();
     }),
+
+    // Get upcoming live races
+    getUpcomingRaces: publicProcedure
+      .input(
+        z.object({
+          provider: z.enum(["racing-api", "rapidapi", "auto"]).default("auto"),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        const service = getLiveRaceDataService();
+        const provider = input?.provider || "auto";
+        return service.getUpcomingRaces(provider);
+      }),
+
+    // Get live races by country
+    getLiveRacesByCountry: publicProcedure
+      .input(z.object({ country: z.string() }))
+      .query(async ({ input }) => {
+        const service = getLiveRaceDataService();
+        return service.getRacesByCountry(input.country);
+      }),
+
+    // Get live races by track
+    getLiveRacesByTrack: publicProcedure
+      .input(z.object({ track: z.string() }))
+      .query(async ({ input }) => {
+        const service = getLiveRaceDataService();
+        return service.getRacesByTrack(input.track);
+      }),
 
     // Get model information and performance metrics
     getModelInfo: publicProcedure.query(() => {

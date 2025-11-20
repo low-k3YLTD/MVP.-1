@@ -49,11 +49,18 @@ export default function Home() {
             Powered by LightGBM, XGBoost, and Logistic Regression models with 95.3% NDCG@3 accuracy.
           </p>
           {isAuthenticated ? (
-            <Link href="/predict">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                Start Predicting
-              </Button>
-            </Link>
+            <div className="flex gap-4 justify-center">
+              <Link href="/predict">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  Start Predicting
+                </Button>
+              </Link>
+              <Link href="/live-races">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                  View Live Races
+                </Button>
+              </Link>
+            </div>
           ) : (
             <a href={getLoginUrl()}>
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
