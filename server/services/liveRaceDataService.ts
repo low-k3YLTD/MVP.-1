@@ -42,25 +42,43 @@ class LiveRaceDataService {
   }
 
   /**
+   * Get HTTP Basic Auth header from username and password
+   */
+  private getBasicAuthHeader(username: string, password: string): string {
+    const credentials = `${username}:${password}`;
+    const encoded = Buffer.from(credentials).toString('base64');
+    return `Basic ${encoded}`;
+  }
+
+  /**
    * Get upcoming races from The Racing API
-   * Requires RACING_API_KEY environment variable
+   * Uses HTTP Basic Authentication with username and password
    */
   async getUpcomingRacesFromTheRacingAPI(): Promise<LiveRace[]> {
-    if (!this.racingApiKey) {
+    const username = process.env.RACING_API_USERNAME;
+    const password = process.env.RACING_API_PASSWORD;
+
+    if (!username || !password) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: "Racing API key not configured. Set RACING_API_KEY environment variable.",
+        message: "Racing API credentials not configured. Set RACING_API_USERNAME and RACING_API_PASSWORD environment variables.",
       });
     }
 
     try {
-      const response = await fetch("https://api.theracingapi.com/v1/meetings", {
+      const authHeader = this.getBasicAuthHeader(username, password);
+      
+      // Fetch racecards for today
+      const response = await fetch("https://api.theracingapi.com/v1/racecards/free?day=today", {
         headers: {
-          "x-api-key": this.racingApiKey,
+          "Authorization": authHeader,
+          "Accept": "application/json",
         },
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[LiveRaceData] API returned ${response.status}: ${errorText}`);
         throw new Error(`API returned ${response.status}`);
       }
 
@@ -159,10 +177,74 @@ class LiveRaceDataService {
    * Transform The Racing API response to our format
    */
   private transformTheRacingAPIData(data: any): LiveRace[] {
-    // This would depend on the actual API response structure
-    // For now, return empty array as placeholder
-    console.log("[LiveRaceData] Transforming The Racing API data...");
-    return [];
+    try {
+      if (!data.racecards || !Array.isArray(data.racecards)) {
+        console.warn("[LiveRaceData] No racecards found in API response");
+        return [];
+      }
+
+      const races: LiveRace[] = [];
+
+      for (const racecard of data.racecards) {
+        const courseName = racecard.course || "Unknown";
+        const meetingDate = racecard.date || new Date().toISOString().split("T")[0];
+        const region = racecard.region || "Unknown";
+        const countryMap: Record<string, string> = {
+          "GB": "UK",
+          "IRE": "Ireland",
+          "USA": "USA",
+          "AUS": "Australia",
+        };
+        const country = countryMap[region] || region;
+
+        // Each racecard represents a single race meeting with multiple races
+        // We'll create one race entry per racecard for simplicity
+        const horses: LiveHorse[] = [];
+
+        if (racecard.runners && Array.isArray(racecard.runners)) {
+          for (const runner of racecard.runners) {
+            horses.push({
+              id: `${runner.number}`,
+              name: runner.horse || "Unknown",
+              number: parseInt(runner.number) || 0,
+              jockey: runner.jockey || undefined,
+              trainer: runner.trainer || undefined,
+              weight: runner.lbs ? `${runner.lbs}lbs` : undefined,
+              odds: undefined, // Odds not in free tier
+              form: runner.form || undefined,
+            });
+          }
+        }
+
+        // Parse distance (convert furlongs to meters if needed)
+        let distance = "Unknown";
+        if (racecard.distance_f) {
+          // Convert furlongs to meters (1 furlong = 201.168 meters)
+          const meters = Math.round(racecard.distance_f * 201.168);
+          distance = meters.toString();
+        }
+
+        races.push({
+          id: `${courseName}_${meetingDate}_${racecard.off_time || "unknown"}`,
+          name: racecard.race_name || `${courseName} Race`,
+          track: courseName,
+          time: racecard.off_dt || new Date().toISOString(),
+          distance,
+          raceClass: racecard.race_class || "Unknown",
+          weather: undefined, // Not provided in free tier
+          going: racecard.going || undefined,
+          horses,
+          country,
+          meetingDate,
+        });
+      }
+
+      console.log(`[LiveRaceData] Transformed ${races.length} races from The Racing API`);
+      return races;
+    } catch (error) {
+      console.error("[LiveRaceData] Error transforming The Racing API data:", error);
+      return [];
+    }
   }
 
   /**
