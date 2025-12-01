@@ -12,7 +12,7 @@ function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={""} component={Home} />
+      <Route path={"/"} component={Home} />
       <Route path={"/predict"} component={Predict} />
       <Route path={"/live-races"} component={LiveRaces} />
       <Route path={"/404"} component={NotFound} />

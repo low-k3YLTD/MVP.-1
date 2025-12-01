@@ -47,8 +47,10 @@
 - [ ] Add real-time updates using WebSocket
 
 ## Known Issues
-- Live races page component not rendering in browser (routing issue - needs investigation)
 - Racing API free tier doesn't provide odds data (only available in paid tier)
+
+## Completed Fixes
+- [x] Fixed wouter routing issue - changed `path=""` to `path="/"` to properly match only root path
 
 ## Notes
 - Ensemble uses 4 models: New LightGBM Ranker, Logistic Regression, XGBoost, Old LightGBM
