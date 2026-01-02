@@ -51,6 +51,8 @@
 
 ## Completed Fixes
 - [x] Fixed wouter routing issue - changed `path=""` to `path="/"` to properly match only root path
+- [x] Fixed __dirname error in ensemblePredictionService and predictionService using import.meta.url
+- [x] Increased vitest timeout from 5s to 30s for long-running prediction tests
 
 ## Notes
 - Ensemble uses 4 models: New LightGBM Ranker, Logistic Regression, XGBoost, Old LightGBM
@@ -60,3 +62,13 @@
 - Racing API credentials: RACING_API_USERNAME and RACING_API_PASSWORD (configured in environment)
 - Live race data service successfully fetches 38+ races daily from The Racing API
 - All integration tests passing: racing-api.test.ts, live-races-integration.test.ts, prediction-with-live-races.test.ts
+
+## Phase 6: Race Predictions on Live Races (COMPLETED)
+- [x] Update LiveRaces component to handle race selection
+- [x] Create race predictions modal/panel component
+- [x] Integrate predictions with tRPC backend
+- [x] Display predicted winners ranked by confidence
+- [x] Test predictions display and ranking
+- [x] Fixed __dirname error in prediction services
+- [x] Increased test timeout to 30 seconds for long-running tests
+- [x] All 13 integration tests passing

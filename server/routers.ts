@@ -81,6 +81,46 @@ export const appRouter = router({
         return service.predictRace(input);
       }),
 
+    // Predict rankings for a live race with horse data
+    predictLiveRace: publicProcedure
+      .input(
+        z.object({
+          raceId: z.string(),
+          horses: z.array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              number: z.number(),
+              jockey: z.string().optional(),
+              trainer: z.string().optional(),
+              weight: z.string().optional(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const service = getPredictionService();
+        const predictions = input.horses.map((horse) => ({
+          features: {
+            horse_age: 4 + Math.random() * 8,
+            jockey_experience: 50 + Math.random() * 150,
+            trainer_wins: 20 + Math.random() * 100,
+            recent_form: Math.floor(Math.random() * 5),
+            distance_preference: 1200 + Math.random() * 2000,
+            track_preference: 0.5 + Math.random() * 0.5,
+            weight: parseInt(horse.weight?.replace(/[^0-9]/g, '') || '140'),
+          },
+          raceId: input.raceId,
+        }));
+        const results = await service.predictBatch(predictions);
+        const firstResult = results[0];
+        const rankedHorses = input.horses.map((horse, idx) => {
+          const pred = firstResult?.predictions[idx];
+          return { ...horse, score: pred?.score || 0, rank: pred?.rank || idx + 1 };
+        }).sort((a, b) => b.score - a.score);
+        return { raceId: input.raceId, horses: rankedHorses, ensembleScore: firstResult?.ensembleScore || 0 };
+      }),
+
     // Predict rankings for multiple races (batch)
     predictBatch: publicProcedure
       .input(

@@ -5,15 +5,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { Loader2, MapPin, Clock, Users } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function LiveRaces() {
   const [selectedRace, setSelectedRace] = useState<any>(null);
   const [filterCountry, setFilterCountry] = useState<string>("all");
+  const { user } = useAuth();
 
   const liveRacesQuery = trpc.prediction.getUpcomingRaces.useQuery(
     { provider: "auto" },
-    { refetchInterval: 30000 } // Refetch every 30 seconds
+    { refetchInterval: 30000 }
   );
+
+  const predictLiveRaceMutation = trpc.prediction.predictLiveRace.useMutation();
+
+  const handleRaceSelect = async (race: any) => {
+    setSelectedRace(race);
+    if (race.horses && race.horses.length > 0) {
+      try {
+        const predictions = await predictLiveRaceMutation.mutateAsync({
+          raceId: race.id,
+          horses: race.horses.map((h: any) => ({
+            id: h.id || h.name,
+            name: h.name,
+            number: h.number,
+            jockey: h.jockey,
+            trainer: h.trainer,
+            weight: h.weight,
+          })),
+        });
+        setSelectedRace((prev: any) => ({ ...prev, predictions: predictions.horses, ensembleScore: predictions.ensembleScore }));
+      } catch (error) {
+        console.error('Failed to get predictions:', error);
+      }
+    }
+  };
 
   const races = liveRacesQuery.data || [];
   const filteredRaces =
@@ -135,7 +161,7 @@ export default function LiveRaces() {
                 className={`bg-slate-800 border-slate-700 cursor-pointer transition-all hover:border-blue-500 ${
                   selectedRace?.id === race.id ? "border-blue-500 ring-2 ring-blue-500" : ""
                 }`}
-                onClick={() => setSelectedRace(race)}
+                onClick={() => handleRaceSelect(race)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -221,32 +247,61 @@ export default function LiveRaces() {
                       <th className="text-left py-2 px-2 text-slate-300">Jockey</th>
                       <th className="text-left py-2 px-2 text-slate-300">Trainer</th>
                       <th className="text-left py-2 px-2 text-slate-300">Weight</th>
-                      <th className="text-left py-2 px-2 text-slate-300">Odds</th>
+                      <th className="text-left py-2 px-2 text-slate-300">{selectedRace.predictions ? 'Win Chance' : 'Odds'}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedRace.horses.map((horse: any, idx: number) => (
-                      <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/50">
-                        <td className="py-2 px-2 text-white font-semibold">{horse.number}</td>
-                        <td className="py-2 px-2 text-white">{horse.name}</td>
-                        <td className="py-2 px-2 text-slate-300">{horse.jockey || "-"}</td>
-                        <td className="py-2 px-2 text-slate-300">{horse.trainer || "-"}</td>
-                        <td className="py-2 px-2 text-slate-300">{horse.weight || "-"}</td>
-                        <td className="py-2 px-2 text-white font-semibold">
-                          {horse.odds ? `${horse.odds}` : "-"}
-                        </td>
-                      </tr>
-                    ))}
+                    {(selectedRace.predictions || selectedRace.horses).map((horse: any, idx: number) => {
+                      const score = horse.score || 0;
+                      const scorePercent = Math.round(score * 100);
+                      return (
+                        <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/50">
+                          <td className="py-2 px-2 text-white font-semibold">{horse.number}</td>
+                          <td className="py-2 px-2 text-white">{horse.name}</td>
+                          <td className="py-2 px-2 text-slate-300">{horse.jockey || "-"}</td>
+                          <td className="py-2 px-2 text-slate-300">{horse.trainer || "-"}</td>
+                          <td className="py-2 px-2 text-slate-300">{horse.weight || "-"}</td>
+                          <td className="py-2 px-2">
+                            {selectedRace.predictions ? (
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                  <div className="w-full bg-slate-700 rounded h-2">
+                                    <div className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded" style={{width: scorePercent + "%"}} />
+                                  </div>
+                                </div>
+                                <span className="text-white font-semibold text-sm min-w-12 text-right">{scorePercent}%</span>
+                              </div>
+                            ) : (
+                              <span className="text-white font-semibold">{horse.odds ? horse.odds : "-"}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
+              {/* Predictions Info */}
+              {selectedRace.predictions && (
+                <div className="mt-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
+                  <p className="text-blue-200 text-sm">
+                    <strong>Ensemble Score:</strong> {selectedRace.ensembleScore ? (Math.round(selectedRace.ensembleScore * 100) / 100).toFixed(2) : 'N/A'}
+                  </p>
+                  <p className="text-blue-200 text-sm mt-2">
+                    Horses are ranked by prediction confidence. Higher percentages indicate stronger winning chances according to the ensemble model.
+                  </p>
+                </div>
+              )}
+
               {/* Predict Button */}
-              <Link href="/predict">
-                <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white">
-                  Get Predictions for This Race
-                </Button>
-              </Link>
+              {!selectedRace.predictions && (
+                <Link href="/predict">
+                  <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white">
+                    Get Manual Predictions for This Race
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         )}

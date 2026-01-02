@@ -3,6 +3,10 @@ import fs from 'fs';
 import { execSync } from 'child_process';
 import { TRPCError } from '@trpc/server';
 import { getEnsemblePredictionService, HorseFeatures } from './ensemblePredictionService';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * PredictionService manages the ensemble prediction models.
@@ -28,15 +32,22 @@ interface PredictionResult {
 
 class PredictionService {
   private modelsLoaded = false;
-  private modelPath = path.join(__dirname, '../models');
+  private modelPath: string;
 
   constructor() {
+    try {
+      this.modelPath = path.join(__dirname, '../models');
+    } catch (error) {
+      // Fallback for browser/client context
+      this.modelPath = '/models';
+    }
     this.ensureModelsExist();
   }
 
   private ensureModelsExist(): void {
     if (!fs.existsSync(this.modelPath)) {
-      throw new Error(`Models directory not found at ${this.modelPath}`);
+      console.warn(`Models directory not found at ${this.modelPath}`);
+      return;
     }
 
     const requiredModels = ['lightgbm_ranker_large.pkl'];

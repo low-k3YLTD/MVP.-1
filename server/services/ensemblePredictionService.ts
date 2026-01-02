@@ -2,6 +2,10 @@ import { execSync } from "child_process";
 import path from "path";
 import fs from "fs";
 import { TRPCError } from "@trpc/server";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Enhanced Ensemble Prediction Service
@@ -36,8 +40,14 @@ class EnsemblePredictionService {
 
   constructor() {
     // Use the uploaded ensemble script
-    this.pythonScriptPath = path.join(__dirname, "../ml_service/run_ensemble.py");
-    this.logDir = path.join(__dirname, "../../logs/predictions");
+    try {
+      this.pythonScriptPath = path.join(__dirname, "../ml_service/run_ensemble.py");
+      this.logDir = path.join(__dirname, "../../logs/predictions");
+    } catch (error) {
+      // Fallback for browser/client context
+      this.pythonScriptPath = "/ml_service/run_ensemble.py";
+      this.logDir = "/logs/predictions";
+    }
     this.ensureLogDir();
   }
 
