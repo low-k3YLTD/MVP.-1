@@ -72,3 +72,22 @@
 - [x] Fixed __dirname error in prediction services
 - [x] Increased test timeout to 30 seconds for long-running tests
 - [x] All 13 integration tests passing
+
+## Phase 7: Exotic Bet Optimizer Integration (COMPLETED)
+- [x] Convert SQLAlchemy models to Drizzle ORM schema
+- [x] Create database tables for races, horses, optimization runs, exotic bets, EV signals, and metrics
+- [x] Implement exotic bet optimization service (exacta, trifecta, superfecta combinations)
+- [x] Create tRPC procedures for exotic bet analysis
+- [x] Generate realistic EV calculations using odds product multipliers
+- [x] Implement Kelly criterion allocation for bet sizing
+- [x] Write comprehensive unit tests (11 tests passing)
+- [x] Test with mock race data and form ratings
+
+## Phase 8: Stripe Payment Integration (IN PROGRESS)
+- [ ] Add Stripe feature to project
+- [ ] Create subscription products (Basic, Pro, Premium tiers)
+- [ ] Implement payment UI components
+- [ ] Add checkout flow and payment processing
+- [ ] Implement subscription management
+- [ ] Add webhook handling for payment events
+- [ ] Test payment flow end-to-end

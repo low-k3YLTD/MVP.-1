@@ -15,6 +15,13 @@
       "when": 1763181092134,
       "tag": "0001_ambitious_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1768034814589,
+      "tag": "0002_flippant_felicia_hardy",
+      "breakpoints": true
     }
   ]
 }

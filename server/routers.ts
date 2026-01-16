@@ -7,6 +7,7 @@ import { getPredictionService } from "./services/predictionService";
 import { getUserPredictions } from "./db";
 import { getMockRaces, getRandomMockRace, type MockRace } from "./services/mockRaceDataService";
 import { getLiveRaceDataService, type LiveRace } from "./services/liveRaceDataService";
+import { exoticBetOptimizer } from "./services/exoticBetOptimizer";
 
 export const appRouter = router({
   system: systemRouter,
@@ -145,6 +146,29 @@ export const appRouter = router({
       )
       .query(async ({ ctx, input }) => {
         return getUserPredictions(ctx.user.id, input.limit);
+      }),
+  }),
+
+  exoticBets: router({
+    optimizeRace: publicProcedure
+      .input(
+        z.object({
+          raceId: z.string(),
+          horses: z.array(
+            z.object({
+              id: z.number(),
+              name: z.string(),
+              winProbability: z.number(),
+              odds: z.number(),
+              formRating: z.number().optional(),
+              speedRating: z.number().optional(),
+              classRating: z.number().optional(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return exoticBetOptimizer.optimize(input.raceId, input.horses);
       }),
   }),
 });
