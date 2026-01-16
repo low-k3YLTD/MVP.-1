@@ -82,8 +82,18 @@
 - [x] Implement Kelly criterion allocation for bet sizing
 - [x] Write comprehensive unit tests (11 tests passing)
 - [x] Test with mock race data and form ratings
+## Phase 8: Exotic Bets UI Page (COMPLETED)
+- [x] Create ExoticBets page component with live race selection
+- [x] Build visual bet card components for exacta, trifecta, superfecta
+- [x] Integrate with tRPC exotic bets optimization endpoint
+- [x] Add filtering by bet type (All, Exacta, Trifecta, Superfecta)
+- [x] Add sorting by EV, Probability, Kelly
+- [x] Display bet cards with all metrics (EV, probability, payout odds, Kelly fraction, confidence)
+- [x] Implement "Add to Bet Slip" functionality
+- [x] Test UI with live race data - 45 profitable combinations found
+- [x] Register route in App.tsx
 
-## Phase 8: Stripe Payment Integration (IN PROGRESS)
+## Phase 9: Stripe Payment Integration (IN PROGRESS)
 - [ ] Add Stripe feature to project
 - [ ] Create subscription products (Basic, Pro, Premium tiers)
 - [ ] Implement payment UI components
