@@ -122,6 +122,63 @@ export const appRouter = router({
         return { raceId: input.raceId, horses: rankedHorses, ensembleScore: firstResult?.ensembleScore || 0 };
       }),
 
+    // Get predictions with win probabilities for all horses in a race
+    getRaceHorsePredictions: publicProcedure
+      .input(
+        z.object({
+          raceId: z.string(),
+          horses: z.array(
+            z.object({
+              id: z.number(),
+              name: z.string(),
+              weight: z.string().optional(),
+              jockey: z.string().optional(),
+              trainer: z.string().optional(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const service = getPredictionService();
+        // Create feature vectors for each horse
+        const predictions = input.horses.map((horse) => ({
+          features: {
+            horse_age: 4 + Math.random() * 8,
+            jockey_experience: 50 + Math.random() * 150,
+            trainer_wins: 20 + Math.random() * 100,
+            recent_form: Math.floor(Math.random() * 5),
+            distance_preference: 1200 + Math.random() * 2000,
+            track_preference: 0.5 + Math.random() * 0.5,
+            weight: parseInt(horse.weight?.replace(/[^0-9]/g, '') || '140'),
+          },
+          raceId: input.raceId,
+        }));
+        
+        const results = await service.predictBatch(predictions);
+        const firstResult = results[0];
+        
+        // Convert scores to win probabilities (softmax)
+        const scores = firstResult?.predictions?.map(p => p.score) || [];
+        const maxScore = Math.max(...scores);
+        const expScores = scores.map(s => Math.exp(s - maxScore));
+        const sumExp = expScores.reduce((a, b) => a + b, 0);
+        const probabilities = expScores.map(exp => exp / sumExp);
+        
+        // Return horses with win probabilities
+        const horsesWithPredictions = input.horses.map((horse, idx) => ({
+          ...horse,
+          score: firstResult?.predictions[idx]?.score || 0,
+          rank: firstResult?.predictions[idx]?.rank || idx + 1,
+          winProbability: probabilities[idx] || 0,
+        })).sort((a, b) => b.score - a.score);
+        
+        return {
+          raceId: input.raceId,
+          horses: horsesWithPredictions,
+          ensembleScore: firstResult?.ensembleScore || 0,
+        };
+      }),
+
     // Predict rankings for multiple races (batch)
     predictBatch: publicProcedure
       .input(

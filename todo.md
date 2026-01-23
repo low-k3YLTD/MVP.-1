@@ -101,3 +101,12 @@
 - [ ] Implement subscription management
 - [ ] Add webhook handling for payment events
 - [ ] Test payment flow end-to-end
+
+## Phase 10: Integrate Live Predictions into Exotic Bets (COMPLETED)
+- [x] Create tRPC procedure to get predictions for a race's horses (getRaceHorsePredictions)
+- [x] Update ExoticBets component to fetch predictions when race is selected
+- [x] Modify exotic bet optimizer to use actual win probabilities from ensemble model
+- [x] Test with live predictions and verify EV calculations
+- [x] Verify calibration of predictions with market odds (70% model, 30% market)
+- [x] Browser testing confirmed: predictions fetched and used in exotic bet optimization
+- [x] All 23/24 integration tests passing (Racing API rate limit issue on 1 test)

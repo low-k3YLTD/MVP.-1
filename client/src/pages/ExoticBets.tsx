@@ -29,6 +29,9 @@ export default function ExoticBets() {
 
   // Optimize race for exotic bets
   const optimizeRaceMutation = trpc.exoticBets.optimizeRace.useMutation();
+  
+  // Get predictions for race horses
+  const getPredictionsMutation = trpc.prediction.getRaceHorsePredictions.useMutation();
 
   const races = useMemo(() => {
     if (!racesData) return [];
@@ -40,22 +43,39 @@ export default function ExoticBets() {
     setSelectedRaceId(race.id);
     setSelectedRace(race);
 
-    // Convert horses to the format expected by the optimizer
-    const horsesForOptimization = (race.horses || []).map((horse: any, idx: number) => ({
-      id: idx + 1,
-      name: horse.name || `Horse ${idx + 1}`,
-      winProbability: 0.1 + Math.random() * 0.2, // Placeholder - would use predictions
-      odds: parseFloat(horse.odds) || 5.0,
-      formRating: 70 + Math.random() * 30,
-      speedRating: 70 + Math.random() * 30,
-      classRating: 70 + Math.random() * 30,
-    }));
-
-    optimizeRaceMutation.mutate({
+    // Fetch predictions for the horses
+    getPredictionsMutation.mutate({
       raceId: race.id,
-      horses: horsesForOptimization,
+      horses: (race.horses || []).map((horse: any, idx: number) => ({
+        id: idx + 1,
+        name: horse.name || `Horse ${idx + 1}`,
+        weight: horse.weight,
+        jockey: horse.jockey,
+        trainer: horse.trainer,
+      })),
     });
   };
+
+  // When predictions are ready, optimize the race
+  useMemo(() => {
+    if (getPredictionsMutation.data && selectedRace) {
+      const horsesForOptimization = getPredictionsMutation.data.horses.map((horse: any) => ({
+        id: horse.id,
+        name: horse.name,
+        winProbability: horse.winProbability,
+        odds: parseFloat(selectedRace.horses?.[horse.id - 1]?.odds) || 5.0,
+        formRating: 70 + Math.random() * 30,
+        speedRating: 70 + Math.random() * 30,
+        classRating: 70 + Math.random() * 30,
+      }));
+
+      optimizeRaceMutation.mutate({
+        raceId: selectedRace.id,
+        horses: horsesForOptimization,
+      });
+    }
+  }, [getPredictionsMutation.data, selectedRace]);
+
 
   // Filter and sort bets
   const filteredAndSortedBets = useMemo(() => {
