@@ -8,6 +8,14 @@ import { getUserPredictions } from "./db";
 import { getMockRaces, getRandomMockRace, type MockRace } from "./services/mockRaceDataService";
 import { getLiveRaceDataService, type LiveRace } from "./services/liveRaceDataService";
 import { exoticBetOptimizer } from "./services/exoticBetOptimizer";
+import {
+  getSubscriptionPlans,
+  createCheckoutSession,
+  getUserSubscription,
+  getPredictionUsage,
+  canMakePrediction,
+  logPredictionUsage,
+} from "./services/subscriptionService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -226,6 +234,57 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         return exoticBetOptimizer.optimize(input.raceId, input.horses);
+      }),
+  }),
+
+  subscription: router({
+    // Get all available subscription plans
+    getPlans: publicProcedure.query(async () => {
+      return getSubscriptionPlans();
+    }),
+
+    // Get current user's subscription
+    getCurrentSubscription: protectedProcedure.query(async ({ ctx }) => {
+      return getUserSubscription(ctx.user.id);
+    }),
+
+    // Get user's prediction usage
+    getPredictionUsage: protectedProcedure.query(async ({ ctx }) => {
+      return getPredictionUsage(ctx.user.id);
+    }),
+
+    // Create a checkout session
+    createCheckout: protectedProcedure
+      .input(
+        z.object({
+          planId: z.number(),
+          successUrl: z.string(),
+          cancelUrl: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const session = await createCheckoutSession(
+          ctx.user.id,
+          input.planId,
+          input.successUrl,
+          input.cancelUrl
+        );
+        return { sessionId: session.id, url: session.url };
+      }),
+
+    // Check if user can make a prediction
+    canMakePrediction: protectedProcedure.query(async ({ ctx }) => {
+      const can = await canMakePrediction(ctx.user.id);
+      const usage = await getPredictionUsage(ctx.user.id);
+      return { canMake: can, usage };
+    }),
+
+    // Log a prediction usage (called after successful prediction)
+    logPredictionUsage: protectedProcedure
+      .input(z.object({ count: z.number().default(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await logPredictionUsage(ctx.user.id, input.count);
+        return { success: true };
       }),
   }),
 });

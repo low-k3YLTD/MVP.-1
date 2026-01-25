@@ -213,3 +213,70 @@ export const performanceMetrics = mysqlTable("performance_metrics", {
 
 export type PerformanceMetrics = typeof performanceMetrics.$inferSelect;
 export type InsertPerformanceMetrics = typeof performanceMetrics.$inferInsert;
+
+// Subscription and Payment Tables
+export const subscriptionPlans = mysqlTable("subscription_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(), // Basic, Pro, Premium
+  stripeProductId: varchar("stripeProductId", { length: 100 }).notNull().unique(),
+  stripePriceId: varchar("stripePriceId", { length: 100 }).notNull().unique(),
+  priceInCents: int("priceInCents").notNull(), // Price in cents (e.g., 999 = $9.99)
+  billingPeriod: varchar("billingPeriod", { length: 20 }).notNull(), // monthly, yearly
+  predictionsPerMonth: int("predictionsPerMonth").notNull(), // -1 for unlimited
+  hasApiAccess: int("hasApiAccess").default(0).notNull(),
+  description: text("description"),
+  features: text("features"), // JSON array of feature strings
+  displayOrder: int("displayOrder").default(0),
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+
+export const userSubscriptions = mysqlTable("user_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  planId: int("planId").notNull().references(() => subscriptionPlans.id),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 100 }).notNull().unique(),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 100 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // active, past_due, canceled, unpaid
+  currentPeriodStart: timestamp("currentPeriodStart").notNull(),
+  currentPeriodEnd: timestamp("currentPeriodEnd").notNull(),
+  canceledAt: timestamp("canceledAt"),
+  cancelAtPeriodEnd: int("cancelAtPeriodEnd").default(0),
+  predictionsUsedThisMonth: int("predictionsUsedThisMonth").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
+
+export const paymentHistory = mysqlTable("payment_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  stripeInvoiceId: varchar("stripeInvoiceId", { length: 100 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 100 }),
+  amountInCents: int("amountInCents").notNull(),
+  currency: varchar("currency", { length: 3 }).default("usd"),
+  status: varchar("status", { length: 20 }).notNull(), // paid, pending, failed
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentHistory = typeof paymentHistory.$inferSelect;
+export type InsertPaymentHistory = typeof paymentHistory.$inferInsert;
+
+export const predictionUsageLog = mysqlTable("prediction_usage_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  predictionsUsed: int("predictionsUsed").default(1),
+  month: varchar("month", { length: 7 }).notNull(), // YYYY-MM format
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PredictionUsageLog = typeof predictionUsageLog.$inferSelect;
+export type InsertPredictionUsageLog = typeof predictionUsageLog.$inferInsert;

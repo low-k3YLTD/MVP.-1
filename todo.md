@@ -94,12 +94,13 @@
 - [x] Register route in App.tsx
 
 ## Phase 9: Stripe Payment Integration (IN PROGRESS)
-- [ ] Add Stripe feature to project
-- [ ] Create subscription products (Basic, Pro, Premium tiers)
-- [ ] Implement payment UI components
-- [ ] Add checkout flow and payment processing
-- [ ] Implement subscription management
-- [ ] Add webhook handling for payment events
+- [x] Add Stripe feature to project
+- [x] Create subscription products (Basic, Pro, Premium tiers)
+- [x] Add subscription management to database schema
+- [x] Implement tRPC procedures for subscription checkout and management
+- [x] Build subscription UI components and pricing page
+- [x] Add prediction limit enforcement based on subscription tier
+- [x] Implement webhook handling for subscription events
 - [ ] Test payment flow end-to-end
 
 ## Phase 10: Integrate Live Predictions into Exotic Bets (COMPLETED)
