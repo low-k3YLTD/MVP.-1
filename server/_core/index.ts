@@ -7,7 +7,6 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getAutomationService } from "../services/automationService";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -60,17 +59,6 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-    
-    // Start automation service
-    try {
-      const automationService = getAutomationService();
-      automationService.start().catch((error) => {
-        console.error("[Automation] Failed to start automation service:", error);
-      });
-      console.log("[Automation] Automation service initialized");
-    } catch (error) {
-      console.error("[Automation] Error initializing automation service:", error);
-    }
   });
 }
 

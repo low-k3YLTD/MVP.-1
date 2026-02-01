@@ -1,9 +1,11 @@
 import path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { TRPCError } from '@trpc/server';
 import { getEnsemblePredictionService, HorseFeatures } from './ensemblePredictionService';
-import { fileURLToPath } from 'url';
+import { getAdvancedEnsembleService } from './advancedEnsembleService';
+import { getPredictionCache } from './predictionCacheService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,7 +62,7 @@ class PredictionService {
   }
 
   /**
-   * Predict rankings for a single race using the ensemble model.
+   * Predict rankings for a single race using the advanced ensemble model.
    */
   async predictRace(input: PredictionInput): Promise<PredictionResult> {
     try {
@@ -75,31 +77,66 @@ class PredictionService {
       const raceId = input.raceId || `race_${Date.now()}`;
       const horseNames = input.horseNames || Object.keys(input.features).map((_, i) => `Horse_${i + 1}`);
 
-      // Prepare horse features for the ensemble service
-      const horseFeatures: HorseFeatures[] = horseNames.map((name, idx) => ({
+      // Check cache first
+      const cache = getPredictionCache();
+      const raceData = { features: input.features, horseNames };
+      const cachedResult = await cache.get(raceId, raceData);
+      
+      if (cachedResult) {
+        console.log(`[PredictionService] Cache hit for race ${raceId}`);
+        return {
+          raceId,
+          predictions: cachedResult.predictions.map((p: any) => ({
+            horseName: p.horse_name,
+            score: p.ensembleScore,
+            rank: p.rank,
+          })),
+          ensembleScore: cachedResult.confidence * 100,
+          timestamp: new Date(),
+        };
+      }
+
+      // Prepare horse features for the advanced ensemble service
+      const horseFeatures = horseNames.map((name, idx) => ({
         horse_name: name,
-        ...Object.fromEntries(
-          Object.entries(input.features).map(([key, value]) => [`${key}_${idx}`, value])
-        ),
+        form_rating: input.features[`form_${idx}`] || 50,
+        speed_figure: input.features[`speed_${idx}`] || 50,
+        jockey_rating: input.features[`jockey_${idx}`] || 50,
+        trainer_rating: input.features[`trainer_${idx}`] || 50,
+        recent_wins: input.features[`wins_${idx}`] || 0,
+        recent_places: input.features[`places_${idx}`] || 0,
+        odds: input.features[`odds_${idx}`] || 5.0,
+        weight: input.features[`weight_${idx}`] || 60,
+        distance_suitability: input.features[`distance_${idx}`] || 50,
+        track_record: input.features[`track_${idx}`] || 50,
       }));
 
-      // Get predictions from the ensemble service
-      const ensembleService = getEnsemblePredictionService();
-      const predictions = await ensembleService.predictRaceOutcome(raceId, horseFeatures);
+      // Get predictions from the advanced ensemble service
+      const advancedEnsemble = getAdvancedEnsembleService();
+      const predictions = await advancedEnsemble.predictWithConfidence(horseFeatures);
 
-      // Calculate ensemble score (average of all prediction scores)
-      const ensembleScore = predictions.reduce((sum, p) => sum + p.score, 0) / predictions.length;
+      // Calculate ensemble score
+      const ensembleScore = predictions.ensembleScore;
 
       const result: PredictionResult = {
         raceId,
-        predictions: predictions.map((p) => ({
+        predictions: predictions.predictions.map((p) => ({
           horseName: p.horse_name,
-          score: p.score,
-          rank: p.position,
+          score: p.ensembleScore,
+          rank: p.rank,
         })),
         ensembleScore,
         timestamp: new Date(),
       };
+
+      // Cache the result
+      await cache.set(raceId, raceData, {
+        predictions: predictions.predictions,
+        confidence: predictions.confidence,
+        modelVersion: '2.0-oracle',
+        processingTimeMs: 0,
+        timestamp: Date.now(),
+      });
 
       return result;
     } catch (error) {
@@ -165,7 +202,7 @@ class PredictionService {
         },
       ],
       ensemble: {
-        strategy: 'averaging',
+        strategy: 'performance-weighted',
         components: [
           'LightGBM Ranker',
           'Logistic Regression',
@@ -173,6 +210,7 @@ class PredictionService {
           'Old LightGBM',
         ],
         meanNdcg3: 0.9529,
+        version: '2.0-oracle',
       },
       lastUpdated: new Date('2025-11-12'),
     };

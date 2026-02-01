@@ -31,14 +31,6 @@ export interface LiveHorse {
   form?: string;
 }
 
-export interface RaceResult {
-  raceId: string;
-  winner: string;
-  placings: Array<{ position: number; horseName: string; odds?: number }>;
-  winningOdds: number;
-  resultStatus: string;
-}
-
 class LiveRaceDataService {
   private racingApiKey: string | null = null;
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
@@ -383,120 +375,6 @@ class LiveRaceDataService {
   async getRacesByTrack(track: string): Promise<LiveRace[]> {
     const races = await this.getUpcomingRaces();
     return races.filter((race) => race.track.toLowerCase() === track.toLowerCase());
-  }
-
-  /**
-   * Get race results from The Racing API
-   */
-  async getRaceResultsFromTheRacingAPI(raceId: string): Promise<RaceResult | null> {
-    const username = process.env.RACING_API_USERNAME;
-    const password = process.env.RACING_API_PASSWORD;
-
-    if (!username || !password) {
-      console.warn("[LiveRaceData] Racing API credentials not configured");
-      return null;
-    }
-
-    try {
-      const authHeader = this.getBasicAuthHeader(username, password);
-      
-      // Fetch results for today
-      const response = await fetch("https://api.theracingapi.com/v1/results/free?day=today", {
-        headers: {
-          "Authorization": authHeader,
-          "Accept": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        console.error(`[LiveRaceData] Results API returned ${response.status}`);
-        return null;
-      }
-
-      const data = await response.json();
-      return this.extractRaceResultFromTheRacingAPI(data, raceId);
-    } catch (error) {
-      console.error("[LiveRaceData] Error fetching race results:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Extract specific race result from The Racing API response
-   */
-  private extractRaceResultFromTheRacingAPI(data: any, targetRaceId: string): RaceResult | null {
-    try {
-      if (!data.results || !Array.isArray(data.results)) {
-        console.warn("[LiveRaceData] No results found in API response");
-        return null;
-      }
-
-      // Search for the race in results
-      for (const result of data.results) {
-        // Find winner (usually first in the results array or marked with position 1)
-        let winner = "Unknown";
-        const placings: Array<{ position: number; horseName: string; odds?: number }> = [];
-        let winningOdds = 0;
-
-        if (result.runners && Array.isArray(result.runners)) {
-          for (const runner of result.runners) {
-            const position = runner.position || runner.finishing_position;
-            const horseName = runner.horse || runner.horse_name || "Unknown";
-            const odds = runner.odds || runner.win_odds;
-
-            if (position === 1 || position === "1") {
-              winner = horseName;
-              winningOdds = odds ? parseFloat(odds) : 0;
-            }
-
-            if (position && parseInt(position) <= 4) {
-              placings.push({
-                position: parseInt(position),
-                horseName,
-                odds: odds ? parseFloat(odds) : undefined,
-              });
-            }
-          }
-        }
-
-        if (winner !== "Unknown") {
-          return {
-            raceId: targetRaceId,
-            winner,
-            placings: placings.sort((a, b) => a.position - b.position),
-            winningOdds,
-            resultStatus: "completed",
-          };
-        }
-      }
-
-      console.log(`[LiveRaceData] No result found for race ${targetRaceId}`);
-      return null;
-    } catch (error) {
-      console.error("[LiveRaceData] Error extracting race result:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Get race results with fallback
-   */
-  async getRaceResults(raceId: string): Promise<RaceResult | null> {
-    try {
-      // Try The Racing API first
-      const result = await this.getRaceResultsFromTheRacingAPI(raceId);
-      if (result) {
-        console.log(`[LiveRaceData] Found result for race ${raceId}: ${result.winner}`);
-        return result;
-      }
-
-      // If no result found, it might not be completed yet
-      console.log(`[LiveRaceData] No result available yet for race ${raceId}`);
-      return null;
-    } catch (error) {
-      console.error("[LiveRaceData] Error getting race results:", error);
-      return null;
-    }
   }
 
   /**

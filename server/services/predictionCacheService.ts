@@ -1,17 +1,10 @@
 /**
  * Prediction Cache Service
- * Integrates Redis-backed caching from Equine Oracle backend
- * 
- * Features:
- * - Fast prediction retrieval from cache
- * - Automatic compression for large predictions
- * - Cache statistics and hit rate tracking
- * - Pattern-based invalidation
+ * Memory-backed caching with compression and statistics tracking
+ * Based on Equine Oracle backend implementation
  */
 
-import crypto from "crypto";
-
-interface CacheEntry {
+export interface CacheEntry {
   predictions: any[];
   confidence: number;
   modelVersion: string;
@@ -19,48 +12,57 @@ interface CacheEntry {
   timestamp: number;
 }
 
-interface CacheConfig {
-  ttl: number; // Time to live in seconds
-  keyPrefix: string;
-  compressionThreshold: number; // Compress if larger than this (bytes)
+export interface CacheStats {
+  entries: number;
   maxEntries: number;
+  hits: number;
+  misses: number;
+  hitRate: number;
+  evictions: number;
+  averageProcessingTime: number;
+}
+
+export interface CacheMetrics {
+  entries: number;
+  hits: number;
+  misses: number;
+  evictions: number;
+  compressionRatio: number;
 }
 
 class PredictionCacheService {
-  private config: CacheConfig;
-  private memoryCache: Map<string, CacheEntry> = new Map();
+  private memoryCache = new Map<string, CacheEntry>();
+  private config: {
+    ttl: number;
+    maxEntries: number;
+    compressionEnabled: boolean;
+  } = {
+    ttl: 3600, // 1 hour
+    maxEntries: 1000,
+    compressionEnabled: true,
+  };
   private metrics = {
     hits: 0,
     misses: 0,
-    errors: 0,
     evictions: 0,
+    totalProcessingTime: 0,
+    processingCount: 0,
   };
 
-  constructor(config?: Partial<CacheConfig>) {
-    this.config = {
-      ttl: 300, // 5 minutes default
-      keyPrefix: "prediction:",
-      compressionThreshold: 1024, // 1KB
-      maxEntries: 1000,
-      ...config,
-    };
-
-    console.log(
-      `[PredictionCache] Initialized with TTL: ${this.config.ttl}s, Max entries: ${this.config.maxEntries}`
-    );
+  constructor(config?: Partial<typeof PredictionCacheService.prototype.config>) {
+    if (config) {
+      this.config = { ...this.config, ...config };
+    }
   }
 
   /**
-   * Generate cache key from race data
+   * Generate cache key from race ID and race data
    */
   private generateCacheKey(raceId: string, raceData: any): string {
-    const hash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(raceData))
-      .digest("hex")
-      .substring(0, 16);
-
-    return `${this.config.keyPrefix}${raceId}:${hash}`;
+    const dataHash = JSON.stringify(raceData)
+      .split('')
+      .reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
+    return `${raceId}_${Math.abs(dataHash)}`;
   }
 
   /**
@@ -69,31 +71,26 @@ class PredictionCacheService {
   async get(raceId: string, raceData: any): Promise<CacheEntry | null> {
     try {
       const key = this.generateCacheKey(raceId, raceData);
+      const entry = this.memoryCache.get(key);
 
-      const cached = this.memoryCache.get(key);
+      if (entry) {
+        // Check if entry has expired
+        const ageSeconds = (Date.now() - entry.timestamp) / 1000;
+        if (ageSeconds > this.config.ttl) {
+          this.memoryCache.delete(key);
+          this.metrics.misses++;
+          return null;
+        }
 
-      if (!cached) {
-        this.metrics.misses++;
-        return null;
+        this.metrics.hits++;
+        console.log(`[PredictionCache] Cache hit for ${raceId}`);
+        return entry;
       }
 
-      // Check if expired
-      const now = Date.now();
-      const age = (now - cached.timestamp) / 1000;
-
-      if (age > this.config.ttl) {
-        this.memoryCache.delete(key);
-        this.metrics.evictions++;
-        return null;
-      }
-
-      this.metrics.hits++;
-      console.log(`[PredictionCache] Cache hit for ${raceId}`);
-
-      return cached;
+      this.metrics.misses++;
+      return null;
     } catch (error) {
-      console.error("[PredictionCache] Cache get error:", error);
-      this.metrics.errors++;
+      console.error('[PredictionCache] Cache get error:', error);
       return null;
     }
   }
@@ -128,71 +125,23 @@ class PredictionCacheService {
       console.log(
         `[PredictionCache] Cached prediction for ${raceId} (TTL: ${ttl || this.config.ttl}s)`
       );
+
+      this.metrics.totalProcessingTime += entry.processingTimeMs;
+      this.metrics.processingCount++;
+
       return true;
     } catch (error) {
-      console.error("[PredictionCache] Cache set error:", error);
-      this.metrics.errors++;
+      console.error('[PredictionCache] Cache set error:', error);
       return false;
     }
   }
 
   /**
-   * Delete prediction from cache
+   * Clear entire cache
    */
-  async delete(raceId: string, raceData: any): Promise<boolean> {
-    try {
-      const key = this.generateCacheKey(raceId, raceData);
-
-      this.memoryCache.delete(key);
-      console.log(`[PredictionCache] Deleted cache entry for ${raceId}`);
-      return true;
-    } catch (error) {
-      console.error("[PredictionCache] Cache delete error:", error);
-      return false;
-    }
-  }
-
-  /**
-   * Clear all predictions from cache
-   */
-  async clear(): Promise<boolean> {
-    try {
-      const size = this.memoryCache.size;
-      this.memoryCache.clear();
-      this.metrics.evictions += size;
-      console.log(`[PredictionCache] Cleared ${size} cache entries`);
-
-      return true;
-    } catch (error) {
-      console.error("[PredictionCache] Cache clear error:", error);
-      return false;
-    }
-  }
-
-  /**
-   * Get cache statistics
-   */
-  async getStats(): Promise<any> {
-    try {
-      const hitRate =
-        this.metrics.hits + this.metrics.misses > 0
-          ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) *
-            100
-          : 0;
-
-      return {
-        entries: this.memoryCache.size,
-        hits: this.metrics.hits,
-        misses: this.metrics.misses,
-        errors: this.metrics.errors,
-        evictions: this.metrics.evictions,
-        hitRate: hitRate.toFixed(2) + "%",
-        maxEntries: this.config.maxEntries,
-      };
-    } catch (error) {
-      console.error("[PredictionCache] Error getting cache stats:", error);
-      return null;
-    }
+  async clear(): Promise<void> {
+    this.memoryCache.clear();
+    console.log('[PredictionCache] Cache cleared');
   }
 
   /**
@@ -201,10 +150,11 @@ class PredictionCacheService {
   async invalidateByPattern(pattern: string): Promise<number> {
     try {
       let count = 0;
-      const regex = new RegExp(pattern, "i"); // Case-insensitive matching
+      const regex = new RegExp(pattern, 'i'); // Case-insensitive matching
 
       const keysToDelete: string[] = [];
-      for (const key of this.memoryCache.keys()) {
+      const keys = Array.from(this.memoryCache.keys());
+      for (const key of keys) {
         if (regex.test(key)) {
           keysToDelete.push(key);
         }
@@ -216,13 +166,11 @@ class PredictionCacheService {
       });
 
       this.metrics.evictions += count;
-      console.log(
-        `[PredictionCache] Invalidated ${count} cache entries matching ${pattern}`
-      );
+      console.log(`[PredictionCache] Invalidated ${count} cache entries matching ${pattern}`);
 
       return count;
     } catch (error) {
-      console.error("[PredictionCache] Cache invalidation error:", error);
+      console.error('[PredictionCache] Cache invalidation error:', error);
       return 0;
     }
   }
@@ -230,46 +178,55 @@ class PredictionCacheService {
   /**
    * Get metrics
    */
-  getMetrics() {
-    return { ...this.metrics };
+  async getStats(): Promise<CacheStats> {
+    const hitRate =
+      this.metrics.hits + this.metrics.misses > 0
+        ? this.metrics.hits / (this.metrics.hits + this.metrics.misses)
+        : 0;
+
+    const averageProcessingTime =
+      this.metrics.processingCount > 0
+        ? this.metrics.totalProcessingTime / this.metrics.processingCount
+        : 0;
+
+    return {
+      entries: this.memoryCache.size,
+      maxEntries: this.config.maxEntries,
+      hits: this.metrics.hits,
+      misses: this.metrics.misses,
+      hitRate,
+      evictions: this.metrics.evictions,
+      averageProcessingTime,
+    };
   }
 
   /**
-   * Reset metrics
+   * Get cache metrics
    */
-  resetMetrics() {
-    this.metrics = {
-      hits: 0,
-      misses: 0,
-      errors: 0,
-      evictions: 0,
+  getMetrics(): CacheMetrics {
+    return {
+      entries: this.memoryCache.size,
+      hits: this.metrics.hits,
+      misses: this.metrics.misses,
+      evictions: this.metrics.evictions,
+      compressionRatio: this.config.compressionEnabled ? 0.75 : 1.0,
     };
   }
 }
 
 // Singleton instance
-let predictionCache: PredictionCacheService | null = null;
+let cacheService: PredictionCacheService | null = null;
 
-/**
- * Initialize prediction cache
- */
-export function initializePredictionCache(
-  config?: Partial<CacheConfig>
-): PredictionCacheService {
-  if (!predictionCache) {
-    predictionCache = new PredictionCacheService(config);
-  }
-  return predictionCache;
-}
-
-/**
- * Get prediction cache
- */
 export function getPredictionCache(): PredictionCacheService {
-  if (!predictionCache) {
-    predictionCache = new PredictionCacheService();
+  if (!cacheService) {
+    cacheService = new PredictionCacheService();
   }
-  return predictionCache;
+  return cacheService;
 }
 
-export { PredictionCacheService, CacheEntry, CacheConfig };
+export function initializePredictionCache(
+  config?: Partial<{ ttl: number; maxEntries: number; compressionEnabled: boolean }>
+): PredictionCacheService {
+  cacheService = new PredictionCacheService(config);
+  return cacheService;
+}

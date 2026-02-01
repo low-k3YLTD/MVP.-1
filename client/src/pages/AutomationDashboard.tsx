@@ -227,7 +227,7 @@ export default function AutomationDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {predictions.map((pred: any) => (
+                    {predictions.map((pred) => (
                       <div key={pred.id} className="border rounded-lg p-4 hover:bg-accent transition-colors">
                         <div className="flex items-start justify-between mb-3">
                           <div>
@@ -246,7 +246,7 @@ export default function AutomationDashboard() {
                           <div className="text-sm">
                             <p className="font-medium text-foreground mb-2">Predicted Order</p>
                             <div className="space-y-1">
-                              {(pred.predictions as any[]).slice(0, 4).map((horse: any, idx: number) => (
+                              {pred.predictions.slice(0, 4).map((horse: any, idx: number) => (
                                 <div key={idx} className="flex justify-between text-muted-foreground">
                                   <span>
                                     {idx + 1}. {horse.name}
@@ -279,7 +279,7 @@ export default function AutomationDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {results.map((result: any) => (
+                    {results.map((result) => (
                       <div key={result.raceId} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>

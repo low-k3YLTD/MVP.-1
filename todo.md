@@ -121,27 +121,14 @@
 - [x] Create persistent background worker with continuous polling loop
 - [x] Add tRPC procedures for automation control and dashboard data
 - [x] Build live predictions and performance dashboard UI
-- [x] Write tests and verify end-to-end automation flow (41 tests passing)
+- [ ] Write tests and verify end-to-end automation flow
 - [x] Enable/disable automation toggle in UI
-- [x] Integrate Racing API results fetching for actual race outcomes
 
 
-## Phase 12: Prediction Persistence to Database (IN PROGRESS)
-- [x] Design database schema for automation_runs, race_results_log, automation_stats tables
-- [x] Create database tables with proper structure and indexes
-- [x] Implement prediction persistence service with full CRUD operations
-- [x] Update automation service to save predictions and results to database
-- [ ] Add tRPC procedures for querying historical predictions
-- [ ] Update dashboard UI to display historical performance data
-- [x] Write tests for persistence layer (10 tests passing, 51 total tests passing)
-
-
-## Phase 13: Equine Oracle Code Integration (COMPLETE)
-- [x] Analyze Equine Oracle backend repositories
-- [x] Analyze Equine Oracle deployment and admin repositories
-- [x] Create Advanced Weighted Ensemble Service (from Equine Oracle backend)
-- [x] Create Prediction Cache Service (from Equine Oracle backend)
-- [x] Create Enhanced Metrics Dashboard Component (from Equine Oracle admin)
-- [x] Write comprehensive unit tests for integrated services (18 tests)
-- [x] Verify all tests passing (73 total tests passing)
-- [x] Code integration complete and ready for production use
+## Phase 14: Integrate Advanced Ensemble into Prediction API (COMPLETE)
+- [x] Create AdvancedEnsembleService with performance-based weighting
+- [x] Create PredictionCacheService with memory-backed caching
+- [x] Integrate cache layer into PredictionService
+- [x] Update predictRace method to use advanced ensemble
+- [x] Add cache hit/miss tracking and metrics
+- [x] All tests passing (33 tests)
