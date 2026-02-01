@@ -5,6 +5,7 @@
 
 import { getLiveRaceDataService, type LiveRace } from "./liveRaceDataService";
 import { getPredictionService } from "./predictionService";
+import { getPredictionPersistenceService } from "./predictionPersistenceService";
 
 export interface AutomationConfig {
   raceDetectionInterval: number; // milliseconds between race detection runs
@@ -43,6 +44,7 @@ interface StoredResult {
   winner: string;
   placings: any[];
   winningOdds: number;
+  resultStatus: string;
   resultFetchedAt: Date;
 }
 
@@ -261,7 +263,30 @@ class AutomationService {
       };
 
       this.predictions.set(race.id, storedPrediction);
-      console.log(`[Automation] Stored prediction for race ${race.id}: Top pick = ${topPick.name} (${topPick.score * 100}%)`);
+      console.log(`[Automation] Stored prediction for race ${race.id}: Top pick = ${topPick.name}`);
+
+      // Persist to database
+      try {
+        const persistenceService = getPredictionPersistenceService();
+        await persistenceService.savePrediction({
+          raceId: storedPrediction.raceId,
+          raceName: storedPrediction.raceName,
+          trackName: storedPrediction.trackName,
+          raceTime: storedPrediction.raceTime,
+          predictions: rankedHorses.map((h) => ({
+            horseName: h.name,
+            score: h.score,
+            rank: h.rank,
+            winProb: h.winProbability,
+          })),
+          topPick: topPick.name,
+          topPickScore: storedPrediction.topPickScore,
+          exoticPicks: [],
+          ensembleScore: storedPrediction.ensembleScore,
+        });
+      } catch (dbError) {
+        console.error("[Automation] Failed to persist prediction:", dbError);
+      }
 
       return true;
     } catch (error) {
@@ -308,13 +333,29 @@ class AutomationService {
           continue;
         }
 
-        // Try to fetch results (placeholder - would call Racing API)
+        // Try to fetch results
         try {
           const result = await this.fetchRaceResult(raceId);
           if (result) {
             this.results.set(raceId, result);
             resultsFound++;
             console.log(`[Automation] Found result for race ${raceId}: ${result.winner}`);
+
+            // Persist result to database
+            try {
+              const persistenceService = getPredictionPersistenceService();
+              await persistenceService.saveResult({
+                raceId: result.raceId,
+                raceName: result.raceName,
+                raceTime: result.raceTime,
+                winner: result.winner,
+                placings: result.placings,
+                winningOdds: result.winningOdds,
+                resultStatus: result.resultStatus,
+              });
+            } catch (dbError) {
+              console.error("[Automation] Failed to persist result:", dbError);
+            }
 
             // Calculate accuracy for this prediction
             this.calculatePredictionAccuracy(prediction, result);
@@ -344,11 +385,12 @@ class AutomationService {
 
       return {
         raceId: result.raceId,
-        raceName: result.raceId, // Will be updated from prediction data
+        raceName: result.raceId,
         raceTime: new Date(),
         winner: result.winner,
         placings: result.placings,
         winningOdds: result.winningOdds,
+        resultStatus: result.resultStatus || "completed",
         resultFetchedAt: new Date(),
       };
     } catch (error) {

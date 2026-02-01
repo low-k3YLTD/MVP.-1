@@ -1,0 +1,2 @@
+-- Placeholder migration to fix sequence
+-- This migration was skipped due to schema changes

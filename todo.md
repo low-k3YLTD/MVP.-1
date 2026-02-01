@@ -124,3 +124,13 @@
 - [x] Write tests and verify end-to-end automation flow (41 tests passing)
 - [x] Enable/disable automation toggle in UI
 - [x] Integrate Racing API results fetching for actual race outcomes
+
+
+## Phase 12: Prediction Persistence to Database (IN PROGRESS)
+- [x] Design database schema for automation_runs, race_results_log, automation_stats tables
+- [x] Create database tables with proper structure and indexes
+- [x] Implement prediction persistence service with full CRUD operations
+- [x] Update automation service to save predictions and results to database
+- [ ] Add tRPC procedures for querying historical predictions
+- [ ] Update dashboard UI to display historical performance data
+- [x] Write tests for persistence layer (10 tests passing, 51 total tests passing)
