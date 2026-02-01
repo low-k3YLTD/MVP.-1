@@ -113,13 +113,13 @@
 - [x] All 23/24 integration tests passing (Racing API rate limit issue on 1 test)
 
 ## Phase 11: Automated Continuous Prediction & Results Polling System (IN PROGRESS)
-- [ ] Add database tables: automated_predictions, race_results, prediction_accuracy
-- [ ] Build race detection and scheduling service
-- [ ] Implement automated prediction generation service
-- [ ] Build results polling and fetching service
-- [ ] Implement prediction accuracy calculation and performance tracking
-- [ ] Create persistent background worker with continuous polling loop
-- [ ] Add tRPC procedures for automation control and dashboard data
-- [ ] Build live predictions and performance dashboard UI
+- [x] Add database tables: automation_runs, race_results_log, automation_stats
+- [x] Build race detection and scheduling service
+- [x] Implement automated prediction generation service
+- [x] Build results polling and fetching service
+- [x] Implement prediction accuracy calculation and performance tracking
+- [x] Create persistent background worker with continuous polling loop
+- [x] Add tRPC procedures for automation control and dashboard data
+- [x] Build live predictions and performance dashboard UI
 - [ ] Write tests and verify end-to-end automation flow
-- [ ] Enable/disable automation toggle in UI
+- [x] Enable/disable automation toggle in UI

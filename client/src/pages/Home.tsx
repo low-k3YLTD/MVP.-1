@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { Link } from "wouter";
-import { Zap, TrendingUp, BarChart3 } from "lucide-react";
+import { Zap, TrendingUp, BarChart3, Activity } from "lucide-react";
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
@@ -49,7 +49,7 @@ export default function Home() {
             Powered by LightGBM, XGBoost, and Logistic Regression models with 95.3% NDCG@3 accuracy.
           </p>
           {isAuthenticated ? (
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Link href="/predict">
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                   Start Predicting
@@ -58,6 +58,11 @@ export default function Home() {
               <Link href="/live-races">
                 <Button size="lg" className="bg-green-600 hover:bg-green-700">
                   View Live Races
+                </Button>
+              </Link>
+              <Link href="/automation">
+                <Button size="lg" className="bg-purple-600 hover:bg-purple-700">
+                  Automation Dashboard
                 </Button>
               </Link>
             </div>
