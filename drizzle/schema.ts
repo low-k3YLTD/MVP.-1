@@ -280,3 +280,65 @@ export const predictionUsageLog = mysqlTable("prediction_usage_log", {
 
 export type PredictionUsageLog = typeof predictionUsageLog.$inferSelect;
 export type InsertPredictionUsageLog = typeof predictionUsageLog.$inferInsert;
+
+// Automated Prediction System - using JSON storage in existing tables
+// We'll store automation data as JSON in the predictions table and create helper tables
+export const automationRuns = mysqlTable("automation_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  raceId: varchar("raceId", { length: 128 }).notNull(),
+  raceName: varchar("raceName", { length: 256 }),
+  trackName: varchar("trackName", { length: 100 }),
+  raceTime: timestamp("raceTime").notNull(),
+  predictions: text("predictions"), // JSON: [{horseName, score, rank, winProb}]
+  topPick: varchar("topPick", { length: 256 }),
+  topPickScore: int("topPickScore"),
+  exoticPicks: text("exoticPicks"), // JSON: [{type, horses, probability, ev}]
+  ensembleScore: int("ensembleScore"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AutomationRun = typeof automationRuns.$inferSelect;
+export type InsertAutomationRun = typeof automationRuns.$inferInsert;
+
+export const raceResultsLog = mysqlTable("race_results_log", {
+  id: int("id").autoincrement().primaryKey(),
+  raceId: varchar("raceId", { length: 128 }).notNull().unique(),
+  raceName: varchar("raceName", { length: 256 }),
+  raceTime: timestamp("raceTime").notNull(),
+  winner: varchar("winner", { length: 256 }),
+  placings: text("placings"), // JSON: [{position, horseName, number}]
+  winningOdds: int("winningOdds"),
+  resultStatus: varchar("resultStatus", { length: 50 }), // completed, abandoned, postponed
+  resultFetchedAt: timestamp("resultFetchedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RaceResultsLog = typeof raceResultsLog.$inferSelect;
+export type InsertRaceResultsLog = typeof raceResultsLog.$inferInsert;
+
+export const automationStats = mysqlTable("automation_stats", {
+  id: int("id").autoincrement().primaryKey(),
+  date: timestamp("date").notNull().unique(),
+  totalRacesDetected: int("totalRacesDetected").default(0),
+  totalPredictionsGenerated: int("totalPredictionsGenerated").default(0),
+  totalResultsFetched: int("totalResultsFetched").default(0),
+  topPickAccuracy: int("topPickAccuracy").default(0),
+  topPickPlaceAccuracy: int("topPickPlaceAccuracy").default(0),
+  exactaHitRate: int("exactaHitRate").default(0),
+  trifectaHitRate: int("trifectaHitRate").default(0),
+  superfectaHitRate: int("superfectaHitRate").default(0),
+  avgConfidenceScore: int("avgConfidenceScore").default(0),
+  totalProfit: int("totalProfit").default(0),
+  totalROI: int("totalROI").default(0),
+  lastRaceProcessedAt: timestamp("lastRaceProcessedAt"),
+  lastErrorAt: timestamp("lastErrorAt"),
+  lastErrorMessage: text("lastErrorMessage"),
+  isAutomationEnabled: int("isAutomationEnabled").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AutomationStats = typeof automationStats.$inferSelect;
+export type InsertAutomationStats = typeof automationStats.$inferInsert;

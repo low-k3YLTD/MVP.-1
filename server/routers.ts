@@ -16,6 +16,7 @@ import {
   canMakePrediction,
   logPredictionUsage,
 } from "./services/subscriptionService";
+import { automationRouter } from "./routers/automationRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -287,6 +288,8 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  automation: automationRouter,
 });
 
 export type AppRouter = typeof appRouter;
