@@ -322,15 +322,15 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
 
           {/* Weather */}
           <div>
-            <Label className="text-slate-300 mb-2 block">Weather Condition</Label>
+            <Label className="text-slate-300 mb-2 block">Weather</Label>
             <Select value={formData.weather} onValueChange={(value) => setFormData({ ...formData, weather: value })}>
               <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-700 border-slate-600">
-                {weatherConditions.map((weather) => (
-                  <SelectItem key={weather.value} value={weather.value} className="text-white">
-                    {weather.label}
+                {weatherConditions.map((cond) => (
+                  <SelectItem key={cond.value} value={cond.value} className="text-white">
+                    {cond.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -345,38 +345,29 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-700 border-slate-600">
-                {horseCountOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value} className="text-white">
-                    {option.label}
+                {horseCountOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-white">
+                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Horse Names Card */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white">Horse Names</CardTitle>
-          <CardDescription className="text-slate-400">
-            Enter the names of {formData.numHorses} horses competing in this race
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            {formData.horseNames.map((name, index) => (
-              <div key={index}>
-                <Label className="text-slate-300 text-sm mb-2 block">Horse {index + 1}</Label>
+          {/* Horse Names */}
+          <div>
+            <Label className="text-slate-300 mb-2 block">Horse Names</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {formData.horseNames.map((name, idx) => (
                 <Input
+                  key={idx}
                   value={name}
-                  onChange={(e) => handleHorseNameChange(index, e.target.value)}
-                  placeholder={`Enter horse name`}
+                  onChange={(e) => handleHorseNameChange(idx, e.target.value)}
+                  placeholder={`Horse ${idx + 1}`}
                   className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
                 />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -410,30 +401,43 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {predictions.predictions.map((pred: any, idx: number) => (
-                <div key={idx} className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold text-lg">
-                        #{pred.rank} {pred.horseName}
-                      </p>
-                      <p className="text-slate-400 text-sm">Confidence Score</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-blue-400 font-mono text-2xl">{pred.score.toFixed(2)}</p>
-                      <div className="w-24 h-2 bg-slate-600 rounded-full mt-2 overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500"
-                          style={{ width: `${Math.min((pred.score / 100) * 100, 100)}%` }}
-                        />
+              {predictions.predictions.map((pred: any, idx: number) => {
+                // Determine confidence color and label based on score
+                let confidenceColor = "bg-red-500";
+                let confidenceLabel = "Low Confidence";
+                if (pred.score >= 70) {
+                  confidenceColor = "bg-green-500";
+                  confidenceLabel = "High Confidence";
+                } else if (pred.score >= 50) {
+                  confidenceColor = "bg-yellow-500";
+                  confidenceLabel = "Medium Confidence";
+                }
+
+                return (
+                  <div key={idx} className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-white font-semibold text-lg">
+                          #{pred.rank} {pred.horseName}
+                        </p>
+                        <p className="text-slate-400 text-sm">{confidenceLabel}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-blue-400 font-mono text-2xl">{pred.score.toFixed(1)}%</p>
                       </div>
                     </div>
+                    <div className="w-full h-3 bg-slate-600 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${confidenceColor} transition-all duration-300`}
+                        style={{ width: `${Math.min(pred.score, 100)}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div className="bg-green-900/20 border border-green-700 rounded-lg p-4 mt-4">
-                <p className="text-green-300 text-sm">
-                  Ensemble Score: <span className="font-semibold">{predictions.ensembleScore.toFixed(2)}</span>
+                );
+              })}
+              <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 mt-4">
+                <p className="text-blue-300 text-sm">
+                  Ensemble Confidence: <span className="font-semibold">{predictions.ensembleScore.toFixed(1)}%</span>
                 </p>
               </div>
             </div>

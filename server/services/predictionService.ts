@@ -122,7 +122,7 @@ class PredictionService {
         raceId,
         predictions: predictions.predictions.map((p) => ({
           horseName: p.horse_name,
-          score: p.ensembleScore,
+          score: p.confidence * 100, // Convert confidence (0-1) to percentage (0-100)
           rank: p.rank,
         })),
         ensembleScore,

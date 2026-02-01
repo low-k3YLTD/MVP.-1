@@ -151,7 +151,34 @@ class AdvancedEnsembleService {
       const scoreVariance =
         modelScores.reduce((sum, score) => sum + Math.pow(score - ensembleScore, 2), 0) /
         modelScores.length;
-      const confidence = Math.max(0.1, 1 - Math.sqrt(scoreVariance));
+      
+      // Calculate confidence with multiple factors:
+      // 1. Model agreement (lower variance = higher confidence)
+      // 2. Ensemble score strength (extreme scores = higher confidence)
+      // 3. Feature quality (higher feature values = higher confidence)
+      const modelAgreement = Math.max(0.1, 1 - Math.sqrt(scoreVariance));
+      
+      // Score strength: confidence increases at extremes (very good or very bad)
+      const scoreDistance = Math.abs(ensembleScore - 0.5) * 2; // 0-1 range
+      const scoreStrength = 0.3 + (scoreDistance * 0.5); // 0.3-0.8 contribution
+      
+      // Feature quality: horses with better features get higher confidence
+      const avgFeature = (
+        (horse.form_rating || 50) +
+        (horse.speed_figure || 50) +
+        (horse.jockey_rating || 50) +
+        (horse.trainer_rating || 50)
+      ) / 400; // Normalize to 0-1
+      const featureQuality = 0.3 + (avgFeature * 0.4); // 0.3-0.7 contribution
+      
+      // Combined confidence: weighted average of factors
+      const confidence = Math.max(
+        0.2,
+        Math.min(
+          0.95,
+          modelAgreement * 0.4 + scoreStrength * 0.3 + featureQuality * 0.3
+        )
+      );
 
       // Calculate uncertainty bounds
       const stdDev = Math.sqrt(scoreVariance);
