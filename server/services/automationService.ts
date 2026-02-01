@@ -334,9 +334,27 @@ class AutomationService {
    * Fetch race result from Racing API
    */
   private async fetchRaceResult(raceId: string): Promise<StoredResult | null> {
-    // TODO: Implement actual Racing API result fetching
-    // For now, return null to indicate no result available
-    return null;
+    try {
+      const raceService = getLiveRaceDataService();
+      const result = await raceService.getRaceResults(raceId);
+      
+      if (!result) {
+        return null;
+      }
+
+      return {
+        raceId: result.raceId,
+        raceName: result.raceId, // Will be updated from prediction data
+        raceTime: new Date(),
+        winner: result.winner,
+        placings: result.placings,
+        winningOdds: result.winningOdds,
+        resultFetchedAt: new Date(),
+      };
+    } catch (error) {
+      console.error(`[Automation] Error fetching race result for ${raceId}:`, error);
+      return null;
+    }
   }
 
   /**

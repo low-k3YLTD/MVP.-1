@@ -121,5 +121,6 @@
 - [x] Create persistent background worker with continuous polling loop
 - [x] Add tRPC procedures for automation control and dashboard data
 - [x] Build live predictions and performance dashboard UI
-- [ ] Write tests and verify end-to-end automation flow
+- [x] Write tests and verify end-to-end automation flow (41 tests passing)
 - [x] Enable/disable automation toggle in UI
+- [x] Integrate Racing API results fetching for actual race outcomes
