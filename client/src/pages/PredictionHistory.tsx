@@ -7,10 +7,12 @@ import { format } from "date-fns";
 import { Loader2, TrendingUp, Target, Zap } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
+import { OutcomeUpdateModal } from "@/components/OutcomeUpdateModal";
 
 export default function PredictionHistory() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [selectedPrediction, setSelectedPrediction] = useState<number | null>(null);
+  const [selectedPrediction, setSelectedPrediction] = useState<any | null>(null);
+  const [outcomeModalOpen, setOutcomeModalOpen] = useState(false);
 
   // Fetch prediction history
   const { data: predictions, isLoading: predictionsLoading } = trpc.prediction.getHistory.useQuery(
@@ -179,16 +181,8 @@ export default function PredictionHistory() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            const actualRank = prompt("Enter actual rank (1-10):");
-                            if (actualRank) {
-                              const rank = parseInt(actualRank);
-                              const isCorrect = rank === pred.predictedRank;
-                              updateOutcomeMutation.mutate({
-                                predictionId: pred.id,
-                                actualRank: rank,
-                                isCorrect,
-                              });
-                            }
+                            setSelectedPrediction(pred);
+                            setOutcomeModalOpen(true);
                           }}
                         >
                           Mark Completed
@@ -199,8 +193,8 @@ export default function PredictionHistory() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No predictions yet.</p>
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
+                <p className="text-muted-foreground">No predictions yet.</p>
                 <Link href="/predict">
                   <Button>Make Your First Prediction</Button>
                 </Link>
@@ -208,6 +202,17 @@ export default function PredictionHistory() {
             )}
           </CardContent>
         </Card>
+
+        {selectedPrediction && (
+          <OutcomeUpdateModal
+            open={outcomeModalOpen}
+            onOpenChange={setOutcomeModalOpen}
+            prediction={selectedPrediction}
+            onSuccess={() => {
+              window.location.reload();
+            }}
+          />
+        )}
       </div>
     </div>
   );
