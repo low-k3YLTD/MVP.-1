@@ -50,6 +50,13 @@
       "when": 1769935349475,
       "tag": "0006_sour_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1769977041418,
+      "tag": "0007_melted_magus",
+      "breakpoints": true
     }
   ]
 }

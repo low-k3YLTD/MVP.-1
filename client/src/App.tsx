@@ -10,6 +10,7 @@ import LiveRaces from "./pages/LiveRaces";
 import ExoticBets from "./pages/ExoticBets";
 import Pricing from "./pages/Pricing";
 import AutomationDashboard from "./pages/AutomationDashboard";
+import PredictionHistory from "./pages/PredictionHistory";
 
 // TODO: Add ExoticBets link to Home page navigation
 // NOTE: Pricing page added at /pricing route
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/exotic-bets"} component={ExoticBets} />
       <Route path={"/pricing"} component={Pricing} />
       <Route path={"/automation"} component={AutomationDashboard} />
+      <Route path={"/history"} component={PredictionHistory} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

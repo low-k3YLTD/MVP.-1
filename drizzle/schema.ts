@@ -29,11 +29,19 @@ export const predictions = mysqlTable("predictions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id),
   raceId: varchar("raceId", { length: 128 }).notNull(),
+  raceName: varchar("raceName", { length: 256 }),
+  raceDate: timestamp("raceDate"),
   horseName: varchar("horseName", { length: 256 }).notNull(),
   predictedRank: int("predictedRank").notNull(),
   predictedScore: varchar("predictedScore", { length: 50 }).notNull(),
+  confidenceScore: varchar("confidenceScore", { length: 50 }).notNull().default("0"),
   actualRank: int("actualRank"),
-  features: text("features"),
+  isCorrect: int("isCorrect"), // 1 if prediction was correct, 0 if wrong, null if pending
+  accuracy: varchar("accuracy", { length: 50 }), // Stores accuracy percentage
+  features: text("features"), // JSON
+  raceOutcome: text("raceOutcome"), // JSON with full race results
+  status: mysqlEnum("status", ["pending", "completed", "cancelled"]).default("pending").notNull(),
+  notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -342,3 +350,20 @@ export const automationStats = mysqlTable("automation_stats", {
 
 export type AutomationStats = typeof automationStats.$inferSelect;
 export type InsertAutomationStats = typeof automationStats.$inferInsert;
+
+// Prediction statistics table for tracking user accuracy over time
+export const predictionStats = mysqlTable("prediction_stats", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  totalPredictions: int("totalPredictions").default(0),
+  correctPredictions: int("correctPredictions").default(0),
+  accuracyPercentage: varchar("accuracyPercentage", { length: 50 }).default("0"),
+  averageConfidence: varchar("averageConfidence", { length: 50 }).default("0"),
+  bestStreak: int("bestStreak").default(0),
+  currentStreak: int("currentStreak").default(0),
+  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PredictionStats = typeof predictionStats.$inferSelect;
+export type InsertPredictionStats = typeof predictionStats.$inferInsert;

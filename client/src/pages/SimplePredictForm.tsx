@@ -12,6 +12,7 @@ import {
 import { Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface RaceFormData {
   raceId: string;
@@ -28,6 +29,7 @@ interface SimplePredictFormProps {
 }
 
 export default function SimplePredictForm({ onPredictionsReceived }: SimplePredictFormProps) {
+  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState<RaceFormData>({
     raceId: "",
     trackType: "turf",
@@ -43,6 +45,7 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
   const [loading, setLoading] = useState(false);
 
   const predictMutation = trpc.prediction.predictRace.useMutation();
+  const savePredictionMutation = trpc.prediction.savePredictionHistory.useMutation();
   const mockRacesQuery = trpc.prediction.getMockRaces.useQuery();
   const randomRaceQuery = trpc.prediction.getRandomRace.useQuery();
   const liveRacesQuery = trpc.prediction.getUpcomingRaces.useQuery(
@@ -171,6 +174,22 @@ export default function SimplePredictForm({ onPredictionsReceived }: SimplePredi
       setPredictions(result);
       if (onPredictionsReceived) {
         onPredictionsReceived(result);
+      }
+
+      // Save each prediction to history if user is authenticated
+      if (isAuthenticated && result.predictions && result.predictions.length > 0) {
+        result.predictions.forEach((pred: any) => {
+          savePredictionMutation.mutate({
+            raceId: formData.raceId || `race_${Date.now()}`,
+            raceName: `${formData.trackType} - ${formData.distance}m`,
+            raceDate: new Date(),
+            horseName: pred.horseName,
+            predictedRank: pred.rank,
+            predictedScore: pred.score.toFixed(2),
+            confidenceScore: pred.score.toFixed(2),
+            features,
+          });
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Prediction failed");

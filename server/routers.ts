@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { getPredictionService } from "./services/predictionService";
-import { getUserPredictions } from "./db";
+import { getUserPredictions, savePredictionWithHistory, getUserPredictionStats, updatePredictionOutcome, updatePredictionStats } from "./db";
 import { getMockRaces, getRandomMockRace, type MockRace } from "./services/mockRaceDataService";
 import { getLiveRaceDataService, type LiveRace } from "./services/liveRaceDataService";
 import { exoticBetOptimizer } from "./services/exoticBetOptimizer";
@@ -212,6 +212,62 @@ export const appRouter = router({
       )
       .query(async ({ ctx, input }) => {
         return getUserPredictions(ctx.user.id, input.limit);
+      }),
+
+    // Save a prediction to history
+    savePredictionHistory: protectedProcedure
+      .input(
+        z.object({
+          raceId: z.string(),
+          raceName: z.string().optional(),
+          raceDate: z.date().optional(),
+          horseName: z.string(),
+          predictedRank: z.number(),
+          predictedScore: z.string(),
+          confidenceScore: z.string(),
+          features: z.record(z.string(), z.number()),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await savePredictionWithHistory(
+          ctx.user.id,
+          input.raceId,
+          input.raceName,
+          input.raceDate,
+          input.horseName,
+          input.predictedRank,
+          input.predictedScore,
+          input.confidenceScore,
+          input.features
+        );
+        return { success: true };
+      }),
+
+    // Get prediction statistics for authenticated user
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      return getUserPredictionStats(ctx.user.id);
+    }),
+
+    // Update prediction outcome
+    updateOutcome: protectedProcedure
+      .input(
+        z.object({
+          predictionId: z.number(),
+          actualRank: z.number(),
+          isCorrect: z.boolean(),
+          raceOutcome: z.record(z.string(), z.any()).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await updatePredictionOutcome(
+          input.predictionId,
+          input.actualRank,
+          input.isCorrect,
+          input.raceOutcome
+        );
+        // Recalculate stats after updating outcome
+        await updatePredictionStats(ctx.user.id);
+        return { success: true };
       }),
   }),
 

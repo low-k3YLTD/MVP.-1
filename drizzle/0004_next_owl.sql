@@ -1,0 +1,1 @@
+-- Placeholder migration (skipped in original development)
