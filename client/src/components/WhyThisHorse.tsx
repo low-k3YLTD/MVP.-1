@@ -48,9 +48,9 @@ export default function WhyThisHorse({
 
   if (loading) {
     return (
-      <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-cyan-500/20">
+      <Card className="bg-gradient-to-br from-black to-slate-900 border-amber-600/30">
         <CardHeader>
-          <CardTitle className="text-cyan-400">Why {horseName}?</CardTitle>
+          <CardTitle className="text-amber-500">Why {horseName}?</CardTitle>
           <CardDescription>Loading explanation...</CardDescription>
         </CardHeader>
       </Card>
@@ -59,9 +59,9 @@ export default function WhyThisHorse({
 
   if (!explanation && !isPremium) {
     return (
-      <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-cyan-500/20">
+      <Card className="bg-gradient-to-br from-black to-slate-900 border-amber-600/30">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-cyan-400">
+          <CardTitle className="flex items-center gap-2 text-amber-500">
             <Lock className="w-4 h-4" />
             Why {horseName}?
           </CardTitle>
@@ -73,7 +73,7 @@ export default function WhyThisHorse({
           </p>
           <Button
             onClick={onUpgradeClick}
-            className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
+            className="w-full bg-amber-600 hover:bg-amber-700 text-black font-semibold"
           >
             Upgrade to Premium
           </Button>
@@ -103,11 +103,11 @@ export default function WhyThisHorse({
         : { label: "Low Trust", color: "bg-red-500/20 text-red-400" };
 
   return (
-    <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-cyan-500/20">
+    <Card className="bg-gradient-to-br from-black to-slate-900 border-amber-600/30">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-cyan-400">Why {horseName}?</CardTitle>
+            <CardTitle className="text-amber-500">Why {horseName}?</CardTitle>
             <CardDescription className="mt-2">{explanation.headline}</CardDescription>
           </div>
           <Badge className={trustBadge.color}>{trustBadge.label}</Badge>
@@ -120,8 +120,8 @@ export default function WhyThisHorse({
           <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
             <div className="text-xs text-slate-400 mb-2">Confidence</div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-cyan-400" />
-              <span className="text-lg font-semibold text-cyan-400">
+              <TrendingUp className="w-4 h-4 text-amber-500" />
+              <span className="text-lg font-semibold text-amber-500">
                 {(explanation.confidence * 100).toFixed(0)}%
               </span>
             </div>
@@ -201,7 +201,7 @@ export default function WhyThisHorse({
           <Button variant="outline" className="flex-1 border-slate-600 hover:bg-slate-800">
             See Comparison
           </Button>
-          <Button className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white">
+          <Button className="flex-1 bg-amber-600 hover:bg-amber-700 text-black font-semibold">
             Bet Now
           </Button>
         </div>
