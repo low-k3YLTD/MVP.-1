@@ -17,6 +17,7 @@ import {
   logPredictionUsage,
 } from "./services/subscriptionService";
 import { automationRouter } from "./routers/automationRouter";
+import { patternsRouter } from "./routers/patternsRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -346,6 +347,7 @@ export const appRouter = router({
   }),
 
   automation: automationRouter,
+  patterns: patternsRouter,
 });
 
 export type AppRouter = typeof appRouter;
