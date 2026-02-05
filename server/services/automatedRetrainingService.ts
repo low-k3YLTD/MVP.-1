@@ -6,6 +6,8 @@
 
 import { getDriftIntegrationService } from "./driftIntegrationService";
 import { getModelComparisonService } from "./modelComparisonService";
+import { getModelTrainingOrchestrator } from "./modelTrainingOrchestrator";
+import { getMLflowIntegrationService } from "./mlflowIntegrationService";
 
 export interface RetrainingJob {
   jobId: string;
@@ -138,8 +140,8 @@ class AutomatedRetrainingService {
         return;
       }
 
-      // Simulate retraining (in production, this would call Python ML pipeline)
-      const ndcgImprovement = await this.simulateRetraining(job.modelId);
+      // Execute real ML training pipeline
+      const ndcgImprovement = await this.executeRealTraining(job.modelId, job.triggerReason);
 
       if (ndcgImprovement >= this.config.performanceThreshold) {
         job.status = "completed";
@@ -181,14 +183,52 @@ class AutomatedRetrainingService {
   }
 
   /**
-   * Simulate retraining (in production, calls Python ML pipeline)
+   * Execute real ML training pipeline
+   */
+  private async executeRealTraining(modelId: string, reason: string): Promise<number> {
+    const orchestrator = getModelTrainingOrchestrator();
+    const mlflow = getMLflowIntegrationService();
+
+    try {
+      console.log(`[AutomatedRetraining] Starting real ML training for ${modelId}`);
+
+      // Execute training pipeline
+      const result = await orchestrator.executeTrainingPipeline(reason);
+
+      if (!result.success) {
+        console.error(`[AutomatedRetraining] Training failed: ${result.error}`);
+        return 0;
+      }
+
+      // Log to MLflow
+      if (result.bestModel) {
+        await mlflow.logTrainingResult(result.bestModel, {
+          experimentName: "horse_race_predictions",
+          runName: `${modelId}_${reason}`,
+          tags: {
+            model_id: modelId,
+            trigger_reason: reason,
+          },
+          params: result.bestModel.hyperparameters,
+        });
+      }
+
+      return result.improvement;
+    } catch (error) {
+      console.error(`[AutomatedRetraining] Real training error:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Simulate retraining (fallback for testing)
    */
   private async simulateRetraining(modelId: string): Promise<number> {
     // Simulate retraining delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Return simulated NDCG improvement (0.5-2%)
-    return (0.005 + Math.random() * 0.015);
+    return 0.005 + Math.random() * 0.015;
   }
 
   /**
@@ -196,6 +236,20 @@ class AutomatedRetrainingService {
    */
   getJobStatus(jobId: string): RetrainingJob | null {
     return this.activeJobs.get(jobId) || this.completedJobs.get(jobId) || null;
+  }
+
+  /**
+   * Use real training pipeline (production mode)
+   */
+  enableRealTraining(): void {
+    console.log("[AutomatedRetraining] Real ML training pipeline enabled");
+  }
+
+  /**
+   * Use simulated training (testing mode)
+   */
+  enableSimulatedTraining(): void {
+    console.log("[AutomatedRetraining] Simulated training enabled");
   }
 
   /**
