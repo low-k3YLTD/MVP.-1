@@ -19,6 +19,8 @@ import {
 import { automationRouter } from "./routers/automationRouter";
 import { patternsRouter } from "./routers/patternsRouter";
 import { mlflowRouter } from "./routers/mlflowRouter";
+import { outcomeRouter } from "./routers/outcomeRouter";
+import { retrainingRouter } from "./routers/retrainingRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -350,6 +352,8 @@ export const appRouter = router({
 
   automation: automationRouter,
   patterns: patternsRouter,
+  outcome: outcomeRouter,
+  retraining: retrainingRouter,
 });
 
 export type AppRouter = typeof appRouter;

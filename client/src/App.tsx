@@ -11,12 +11,16 @@ import ExoticBets from "./pages/ExoticBets";
 import Pricing from "./pages/Pricing";
 import AutomationDashboard from "./pages/AutomationDashboard";
 import PredictionHistory from "./pages/PredictionHistory";
+import ModelComparison from "./pages/ModelComparison";
 
 // TODO: Add ExoticBets link to Home page navigation
+// TODO: Add ModelComparison link to Home page navigation
 // NOTE: Pricing page added at /pricing route
+// NOTE: ModelComparison page added at /models route
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
+  // ModelComparison is public to show model metrics and drift alerts
   return (
     <Switch>
       <Route path={"/"} component={Home} />
@@ -26,6 +30,7 @@ function Router() {
       <Route path={"/pricing"} component={Pricing} />
       <Route path={"/automation"} component={AutomationDashboard} />
       <Route path={"/history"} component={PredictionHistory} />
+      <Route path={"/models"} component={ModelComparison} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
