@@ -18,9 +18,11 @@ import {
 } from "./services/subscriptionService";
 import { automationRouter } from "./routers/automationRouter";
 import { patternsRouter } from "./routers/patternsRouter";
+import { mlflowRouter } from "./routers/mlflowRouter";
 
 export const appRouter = router({
   system: systemRouter,
+  mlflow: mlflowRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
